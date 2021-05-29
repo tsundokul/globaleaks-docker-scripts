@@ -3,7 +3,7 @@ services:
     globaleaks:
       container_name: globaleaks
       build: .
-      image: globaleaks/globaleaks
+      image: tsundokul/globaleaks
       ports:
         - '80:80'
         - '443:443'
