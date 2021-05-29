@@ -1,4 +1,4 @@
-version: "3"
+version: "3.2"
 services:
     globaleaks:
       container_name: globaleaks
@@ -7,3 +7,10 @@ services:
       ports:
         - '80:80'
         - '443:443'
+      volumes:
+        - 'globaleaks:/var/globaleaks'
+        - 'tor:/var/lib/tor'
+
+volumes:
+  globaleaks: {}
+  tor: {}

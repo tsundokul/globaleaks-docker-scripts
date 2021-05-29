@@ -19,8 +19,6 @@ RUN chmod 02750 "$TORLOGDIR" && chown debian-tor:adm "$TORLOGDIR"
 ADD data/torrc /etc/tor/torrc
 
 VOLUME [ "/var/globaleaks/" ]
-EXPOSE 80
-EXPOSE 443
 
 ADD data/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 CMD ["/usr/bin/supervisord"]
