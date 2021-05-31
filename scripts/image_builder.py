@@ -28,9 +28,13 @@ def get_latest_image_version(client, img_name):
   Returns:
   packaging.version.Version: highest version
   """
-  tags = client.images.get(img_name).tags
-  tags = [t for t in tags if t[-1].isnumeric()]
-  tags = [version.parse(t.split(':')[-1]) for t in tags]
+  try:
+    tags = client.images.get(img_name).tags
+    tags = [t for t in tags if t[-1].isnumeric()]
+    tags = [version.parse(t.split(':')[-1]) for t in tags]
+  except docker.errors.ImageNotFound:
+    tags = (version.parse('0.0.0'), )
+
   return max(tags)
 
 def get_latest_repo_version(repo, package='globaleaks'):
@@ -39,11 +43,15 @@ def get_latest_repo_version(repo, package='globaleaks'):
   packaging.version.Version: highest version
   """
   sources = APTSources([APTRepository(*repo)])
-  versions = [p.version for p in sources.get_packages_by_name('globaleaks')]
+  versions = [p.version for p in sources.get_packages_by_name(package)]
   versions = [version.parse(v) for v in versions]
   return max(versions)
 
 def build_globaleaks_img(version, repo, path='..'):
+  """Builds and tags an image
+  Returns:
+  list: built image tags
+  """
   img, _logs = client.images.build(path=path)
   tags = (str(version), f'{version}-buster', 'latest')
 
@@ -53,20 +61,19 @@ def build_globaleaks_img(version, repo, path='..'):
   return tags
 
 def push_tags(client, repo, tags):
+  """Pushes to dockerhub specific tags of an image
+  """
   for tag in tags:
     client.images.push(repo, tag)
 
 if __name__ == '__main__':
   logging.basicConfig(
-    format='%(asctime)s - %(message)s',
+    format='%(asctime)s - %(levelname)s - %(message)s',
     level=logging.INFO)
   logging.info('Logging in...')
   client = make_client()
 
-  try:
-    image_ver = get_latest_image_version(client, IMGREPO)
-  except docker.errors.ImageNotFound:
-    image_ver = version.parse('0.0.0')
+  image_ver = get_latest_image_version(client, IMGREPO)
 
   while True:
     repo_ver = get_latest_repo_version(APTREPO)
@@ -75,11 +82,18 @@ if __name__ == '__main__':
       logging.info(f'Versions: {image_ver} (image), {repo_ver} (repo)')
       logging.info(f'Updating image...')
 
-      tags = build_globaleaks_img(repo_ver, IMGREPO)
-      logging.info(f'Pushing tags: {tags}')
-      push_tags(client, IMGREPO, tags)
+      try:
+        tags = build_globaleaks_img(repo_ver, IMGREPO)
+        logging.info(f'Pushing tags: {tags}')
+        push_tags(client, IMGREPO, tags)
 
-      image_ver = repo_ver
-      logging.info(f'Update finished')
+        image_ver = repo_ver
+        logging.info(f'Update finished')
+
+      except docker.errors.BuildError as e:
+        # Sometimes new packages are not signed and the build may fail
+        # for this specific scenario, wait for 3x the ammount of time
+        logging.error(e)
+        sleep(WAIT*2)
 
     sleep(WAIT)
