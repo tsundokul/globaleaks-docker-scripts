@@ -8,7 +8,7 @@ from packaging import version
 from time import sleep
 
 IMGREPO = 'tsundokul/globaleaks'
-APTREPO = ('http://deb.globaleaks.org', 'buster')
+APTREPO = ('http://deb.globaleaks.org', 'bullseye')
 WAIT = 10 * 60
 
 def make_client():
@@ -47,13 +47,13 @@ def get_latest_repo_version(repo, package='globaleaks'):
   versions = [version.parse(v) for v in versions]
   return max(versions)
 
-def build_globaleaks_img(version, repo, path='..'):
+def build_globaleaks_img(client, version, repo, path='..'):
   """Builds and tags an image
   Returns:
   list: built image tags
   """
-  img, _logs = client.images.build(path=path)
-  tags = (str(version), f'{version}-buster', 'latest')
+  img, _logs = client.images.build(path=path, nocache=True, pull=True)
+  tags = (str(version), f'{version}-bullseye', 'latest')
 
   for tag in tags:
     img.tag(repo, tag)
@@ -83,7 +83,7 @@ if __name__ == '__main__':
       logging.info(f'Updating image...')
 
       try:
-        tags = build_globaleaks_img(repo_ver, IMGREPO)
+        tags = build_globaleaks_img(client, repo_ver, IMGREPO)
         logging.info(f'Pushing tags: {tags}')
         push_tags(client, IMGREPO, tags)
 
