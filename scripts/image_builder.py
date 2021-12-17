@@ -76,7 +76,12 @@ if __name__ == '__main__':
   image_ver = get_latest_image_version(client, IMGREPO)
 
   while True:
-    repo_ver = get_latest_repo_version(APTREPO)
+    try:
+      repo_ver = get_latest_repo_version(APTREPO)
+    except AttributeError:
+      print("Repo error, skipping this try")
+      sleep(WAIT)
+      continue
 
     if repo_ver > image_ver:
       logging.info(f'Versions: {image_ver} (image), {repo_ver} (repo)')
