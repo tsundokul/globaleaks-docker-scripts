@@ -52,7 +52,7 @@ def build_globaleaks_img(client, version, repo, path='..'):
   Returns:
   list: built image tags
   """
-  img, _logs = client.images.build(path=path, nocache=True, pull=True)
+  img, _logs = client.images.build(path=path, nocache=True, pull=True, rm=True)
   tags = (str(version), f'{version}-bullseye', 'latest')
 
   for tag in tags:
@@ -65,6 +65,18 @@ def push_tags(client, repo, tags):
   """
   for tag in tags:
     client.images.push(repo, tag)
+
+def test_image(docker_client, image, expected_version):
+  out = docker_client.containers.run(
+    image=f'{image}:{expected_version}',
+    entrypoint='globaleaks',
+    command='-v',
+    detach=False,
+    remove=True
+  ).decode()
+
+  assert str(expected_version) in out, f'Version mismatch: {expected_version} / {out}'
+
 
 if __name__ == '__main__':
   logging.basicConfig(
@@ -89,6 +101,8 @@ if __name__ == '__main__':
 
       try:
         tags = build_globaleaks_img(client, repo_ver, IMGREPO)
+        test_image(client, IMGREPO, repo_ver)
+   
         logging.info(f'Pushing tags: {tags}')
         push_tags(client, IMGREPO, tags)
 

@@ -4,8 +4,9 @@ RUN apt-get update -q && \
     apt-get install -y gpg curl supervisor && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-RUN echo "deb http://deb.globaleaks.org buster/" > /etc/apt/sources.list.d/globaleaks.list
-RUN curl -sS https://deb.globaleaks.org/globaleaks.asc | apt-key add -
+RUN echo "deb https://deb.globaleaks.org bullseye/" > /etc/apt/sources.list.d/globaleaks.list
+RUN curl -L https://deb.globaleaks.org/globaleaks.asc | apt-key add
+
 RUN apt-get update -q && \
     apt-get install -y globaleaks && \
     apt-get clean && \
